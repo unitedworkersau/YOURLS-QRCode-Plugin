@@ -201,10 +201,7 @@ function sean_add_qrcode_css_head( $context ) {
 			function sean_add_qr_popup(el) {
 				// need to do 'off' first because adding a URL triggers this twice and we don't want two identical actions added to click
 				el.off('click').on('click', function() {
-					var NWin = window.open($(this).attr('href'), '', 'scrollbars=0,location=0,height=200,width=200');
-					if (window.focus) {
-						NWin.focus();
-					}
+					window.open($(this).attr('href'), '_blank');
 					return false;
 				});
 			}
