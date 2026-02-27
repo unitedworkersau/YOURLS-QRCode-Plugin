@@ -243,7 +243,7 @@ function sean_add_qr_div($args) {
 ?>
 	<div id="sean_qr_box" class="share">
 		<?php echo $heading; ?>
-			<img src="<?php echo $img; ?>" id="sean_qr_img" alt="QR code" width="75px" />
+			<img src="<?php echo $img; ?>" id="sean_qr_img" alt="QR code" width="75" />
 	</div>
 <?php
 }
