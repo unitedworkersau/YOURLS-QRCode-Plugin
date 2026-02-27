@@ -28,6 +28,9 @@ defined('SEAN_QR_ADD_TO_SHAREBOX') or define('SEAN_QR_ADD_TO_SHAREBOX', true);
 // outside margin of QR code in 'virtual' pixels:
 defined('SEAN_QR_MARGIN') or define('SEAN_QR_MARGIN', 4);
 
+// should we include a logo in the QR code
+defined('SEAN_QR_LOGO_ENABLED') or define('SEAN_QR_LOGO_ENABLED', true);
+
 require_once __DIR__.'/vendor/autoload.php';
 
 //include qrcode library
@@ -76,35 +79,47 @@ function sean_yourls_qrcode( $request ) {
 				$url = strtoupper( $url );
 			}
 
-			$options = new LogoOptions;
+			$options = SEAN_QR_LOGO_ENABLED ? new LogoOptions : new QROptions;
 
 			$options->version          = 7;
 			$options->eccLevel         = QRCode::ECC_H;
 			$options->imageBase64      = false;
-			$options->logoSpaceWidth   = SEAN_QR_LOGO_SPACE;
-			$options->logoSpaceHeight  = SEAN_QR_LOGO_SPACE;
 			$options->scale            = SEAN_QR_SCALE;
 			$options->imageTransparent = false;
 			$options->quietzoneSize    = SEAN_QR_MARGIN;
 
-			$qrOutputInterface = new QRImageWithLogo($options, (new QRCode($options))->getMatrix($url));
-			$logo = __DIR__.'/logo.png';
+			$logo = null;
 
-			if(!is_readable($logo)){
-				if(function_exists('yourls_debug_log')){
-					yourls_debug_log('seans-qrcode: logo.png is missing or unreadable');
-				}
-				else{
-					error_log('seans-qrcode: logo.png is missing or unreadable');
-				}
+			if(SEAN_QR_LOGO_ENABLED){
+				$options->logoSpaceWidth   = SEAN_QR_LOGO_SPACE;
+				$options->logoSpaceHeight  = SEAN_QR_LOGO_SPACE;
 
-				http_response_code(500);
-				exit;
+				$logo = __DIR__.'/logo.png';
+
+				if(!is_readable($logo)){
+					if(function_exists('yourls_debug_log')){
+						yourls_debug_log('seans-qrcode: logo.png is missing or unreadable');
+					}
+					else{
+						error_log('seans-qrcode: logo.png is missing or unreadable');
+					}
+
+					http_response_code(500);
+					exit;
+				}
 			}
 
-			// dump the output, with an additional logo
+			$qrcode = new QRCode($options);
+
 			try{
-				$image = $qrOutputInterface->dump(null, $logo);
+				if(SEAN_QR_LOGO_ENABLED){
+					$qrOutputInterface = new QRImageWithLogo($options, $qrcode->getMatrix($url));
+					$image = $qrOutputInterface->dump(null, $logo);
+				}
+				else{
+					$image = $qrcode->render($url);
+				}
+
 				header('Content-type: image/png');
 				echo $image;
 			}

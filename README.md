@@ -29,6 +29,7 @@ The plugin requires no special configuration, but there are a few options that y
 
 ```php
 define("SEAN_QR_SCALE", 5);
+define("SEAN_QR_LOGO_ENABLED", false);
 ```
 
 ### SEAN_QR_SCALE
@@ -42,6 +43,10 @@ The size in QR modules, multiply with QROptions::$scale for pixel size
 ### SEAN_QR_ADD_TO_SHAREBOX
 _Boolean. Default: true._  
 Whether to include a QR code in the share boxes. Set to true to enable.
+
+### SEAN_QR_LOGO_ENABLED
+_Boolean. Default: true._  
+Whether to include the logo image in the center of the QR code. Set to `false` to generate plain QR codes without the logo overlay. Use a real boolean value (not a string), for example `define("SEAN_QR_LOGO_ENABLED", false);`.
 
 ### SEAN_QR_MARGIN
 _Interger. Default: 4._  
