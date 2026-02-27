@@ -16,8 +16,6 @@
 
 use chillerlan\QRCode\Output\{QRCodeOutputException, QRImage};
 
-use function imagecopyresampled, imagecreatefrompng, imagesx, imagesy, is_file, is_readable;
-
 /**
  * @property \chillerlan\QRCodeExamples\LogoOptions $options
  */
@@ -34,9 +32,7 @@ class QRImageWithLogo extends QRImage{
 		// set returnResource to true to skip further processing for now
 		$this->options->returnResource = true;
 
-		// of course you could accept other formats too (such as resource or Imagick)
-		// i'm not checking for the file type either for simplicity reasons (assuming PNG)
-		if(!is_file($logo) || !is_readable($logo)){
+		if($logo === null || !is_file($logo) || !is_readable($logo)){
 			throw new QRCodeOutputException('invalid logo');
 		}
 
@@ -49,21 +45,23 @@ class QRImageWithLogo extends QRImage{
 		// there's no need to save the result of dump() into $this->image here
 		parent::dump($file);
 
+		$lw = max(1, ($this->options->logoSpaceWidth - 2) * $this->options->scale);
+		$lh = max(1, ($this->options->logoSpaceHeight - 2) * $this->options->scale);
+		$ql = $this->matrix->size() * $this->options->scale;
+
 		$im = imagecreatefrompng($logo);
+
+		if($im === false){
+			throw new QRCodeOutputException('unable to create logo image resource');
+		}
 
 		// get logo image size
 		$w = imagesx($im);
 		$h = imagesy($im);
 
-		// set new logo size, leave a border of 1 module (no proportional resize/centering)
-		$lw = ($this->options->logoSpaceWidth - 2) * $this->options->scale;
-		$lh = ($this->options->logoSpaceHeight - 2) * $this->options->scale;
-
-		// get the qrcode size
-		$ql = $this->matrix->size() * $this->options->scale;
-
 		// scale the logo and copy it over. done!
 		imagecopyresampled($this->image, $im, ($ql - $lw) / 2, ($ql - $lh) / 2, 0, 0, $lw, $lh, $w, $h);
+		imagedestroy($im);
 
 		$imageData = $this->dumpImage();
 

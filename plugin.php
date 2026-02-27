@@ -42,16 +42,25 @@ class LogoOptions extends QROptions{
 }
 
 // Kick in if the loader does not recognize a valid pattern
-yourls_add_action( 'loader_failed', 'sean_yourls_qrcode' );
+yourls_add_action( 'redirect_keyword_not_found', 'sean_yourls_qrcode' );
 function sean_yourls_qrcode( $request ) {
+	static $qr_response_sent = false;
+
+	if( $qr_response_sent ) {
+		return;
+	}
+
+	$requested = is_array( $request ) ? ($request[0] ?? '') : (string)$request;
+
 	// Get authorized charset in keywords and make a regexp pattern
 	$pattern = yourls_make_regexp_pattern( yourls_get_shorturl_charset() );
 
 	// if the shorturl is like bleh.qr
-	if( preg_match( "@^([$pattern]+)(\.qr)?$@i", $request[0], $matches ) ) {
+	if( preg_match( "@^([$pattern]+)(\.qr)?$@i", $requested, $matches ) ) {
 		// if this shorturl exists...
 		$keyword = yourls_sanitize_keyword( $matches[1] );
 		if( yourls_is_shorturl( $keyword ) ) {
+			$qr_response_sent = true;
 
 			$url = yourls_link( $keyword );
 			$yourls_url = yourls_site_url( false );
@@ -78,12 +87,37 @@ function sean_yourls_qrcode( $request ) {
 			$options->imageTransparent = false;
 			$options->quietzoneSize    = SEAN_QR_MARGIN;
 
-			header('Content-type: image/png');
-
 			$qrOutputInterface = new QRImageWithLogo($options, (new QRCode($options))->getMatrix($url));
+			$logo = __DIR__.'/logo.png';
+
+			if(!is_readable($logo)){
+				if(function_exists('yourls_debug_log')){
+					yourls_debug_log('seans-qrcode: logo.png is missing or unreadable');
+				}
+				else{
+					error_log('seans-qrcode: logo.png is missing or unreadable');
+				}
+
+				http_response_code(500);
+				exit;
+			}
 
 			// dump the output, with an additional logo
-			echo $qrOutputInterface->dump(null, __DIR__.'/logo.png');
+			try{
+				$image = $qrOutputInterface->dump(null, $logo);
+				header('Content-type: image/png');
+				echo $image;
+			}
+			catch(\Throwable $e){
+				if(function_exists('yourls_debug_log')){
+					yourls_debug_log('seans-qrcode: '.$e->getMessage());
+				}
+				else{
+					error_log('seans-qrcode: '.$e->getMessage());
+				}
+
+				http_response_code(500);
+			}
 
 			exit;
 		}
@@ -114,7 +148,7 @@ function sean_add_qrcode_button( $action_links, $keyword, $url, $ip, $clicks, $t
 		$qrlink, $qrcode['id'], $qrcode['title'], 'button button_qrcode', $qrcode['anchor']
 	);
 
-  return $action_links;
+	return $action_links;
 }
 
 
