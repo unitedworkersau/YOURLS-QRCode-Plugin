@@ -123,6 +123,7 @@ function sean_yourls_qrcode( $request ) {
 				// Discard any notices/warnings buffered before the image
 				while( ob_get_level() ) { ob_end_clean(); }
 				header('Content-type: image/png');
+				header('Content-Disposition: inline; filename="' . $keyword . '.png"');
 				echo $image;
 			}
 			catch(\Throwable $e){
